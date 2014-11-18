@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">TicQR</string>
+	<string name="title_activity_capture">Frame two QR codes</string>
+	<string name="title_activity_order">Place your order</string>
+
+	<string name="photo_description">The object that was found in your photo</string>
+
+	<string name="menu_send_order">Send order</string>
+	<string name="menu_rescan">Rescan</string>
+
+	<string name="email_prompt">Email your order</string>
+	<string name="email_subject">Order request</string>
+	<string name="email_body">Hi,\n\nPlease could I place the following order:\n\n%1$s\nThank you! My contact details are:\n\n</string>
+	<string name="email_item">%1$d × %2$s\n</string>
+	<string name="email_backup_sender">To: %1$s\n\n%2$s</string>
+
+	<string name="hint_send_order">Touch to edit boxes, or press send to submit your order</string>
+	<string name="hint_no_boxes_found">No ticked boxes found</string>
+	<string name="hint_no_email_client">No email client was found - the order has been copied to your clipboard instead</string>
+	<string name="hint_no_camera">Sorry, no camera was found - a camera is required for this app</string>
+	<string name="hint_json_error">Sorry, encountered a page error - maybe this isn\'t a tick box document?</string>
+	<string name="hint_connection_error">Connection error - is there an internet connection available?</string>
+	<string name="hint_box_detection_failed">Error: unable to look for tick boxes - please try again</string>
+</resources>

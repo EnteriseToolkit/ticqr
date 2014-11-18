@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<SurfaceView
+		android:id="@+id/preview_view"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:keepScreenOn="true"/>
+
+	<ac.robinson.dualqrscanner.ViewfinderView
+		android:id="@+id/viewfinder_view"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="@android:color/transparent"/>
+
+	<ImageView
+		android:id="@+id/image_view"
+		android:contentDescription="@string/photo_description"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_marginTop="?attr/actionBarSize"
+		android:visibility="visible"/>
+	<!-- must be invisible (rather than gone) as we need its dimensions -->
+
+	<ProgressBar
+		android:id="@+id/parse_progress"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_centerInParent="true"
+		android:indeterminate="true"
+		android:visibility="gone"/>
+
+	<RelativeLayout
+		android:id="@+id/tick_highlight_holder"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"/>
+
+</RelativeLayout>

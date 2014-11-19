@@ -400,9 +400,9 @@ public class TicQRActivity extends DecoderActivity {
 		findViewById(R.id.parse_progress).setVisibility(View.GONE);
 
 		getSupportActionBar().setTitle(R.string.title_activity_order);
+		supportInvalidateOptionsMenu(); // to show the place order button & rescan option
 		if (tickedBoxes) {
 			mEmailContents = itemsBuilder.toString();
-			supportInvalidateOptionsMenu(); // to show the place order button
 			Toast.makeText(TicQRActivity.this, getString(R.string.hint_send_order), Toast.LENGTH_SHORT).show();
 		} else {
 			Toast.makeText(TicQRActivity.this, getString(R.string.hint_no_boxes_found), Toast.LENGTH_SHORT).show();

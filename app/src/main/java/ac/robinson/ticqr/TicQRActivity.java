@@ -75,8 +75,8 @@ public class TicQRActivity extends DecoderActivity {
 	private float mBoxSize;
 
 	private String mDestinationEmail;
-	private ArrayList<TickBoxHolder> mServerTickBoxes;
-	private ArrayList<PointF> mImageTickBoxes;
+	private ArrayList<TickBoxHolder> mServerTickBoxes = new ArrayList<TickBoxHolder>();
+	private ArrayList<PointF> mImageTickBoxes = new ArrayList<PointF>();
 
 	private boolean mBoxesLoaded = false;
 	private boolean mImageParsed = false;
@@ -134,7 +134,7 @@ public class TicQRActivity extends DecoderActivity {
 		actionBar.setTitle(R.string.title_activity_capture);
 		actionBar.setDisplayShowTitleEnabled(true);
 
-		int resultPointColour = getResources().getColor(R.color.primary);
+		int resultPointColour = getResources().getColor(R.color.accent);
 		((ViewfinderView) findViewById(R.id.viewfinder_view)).setResultPointColour(resultPointColour);
 	}
 
@@ -144,6 +144,9 @@ public class TicQRActivity extends DecoderActivity {
 		if (TextUtils.isEmpty(mEmailContents)) {
 			// don't show the send button when there is no email to send
 			menu.findItem(R.id.action_send_order).setVisible(false);
+		}
+		if (mBitmap == null) {
+			menu.findItem(R.id.action_rescan).setVisible(false);
 		}
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -196,12 +199,10 @@ public class TicQRActivity extends DecoderActivity {
 				Log.d(TAG, response.toString());
 				try {
 					if ("ok".equals(response.getString("status"))) {
-						mDestinationEmail = response.getString("destination");
+						mDestinationEmail = response.isNull("destination") ? null : response.getString("destination");
 
 						JSONArray boxes = response.getJSONArray("tickBoxes");
 						if (boxes != null && !boxes.isNull(0)) {
-							mServerTickBoxes = new ArrayList<TickBoxHolder>();
-
 							for (int i = 0; i < boxes.length(); i++) {
 								JSONObject jsonBox = boxes.getJSONObject(i);
 
@@ -411,13 +412,13 @@ public class TicQRActivity extends DecoderActivity {
 	private void sendOrder() {
 		try {
 			Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto",
-					mDestinationEmail == null ? "" : mDestinationEmail, null));
+					TextUtils.isEmpty(mDestinationEmail) ? "" : mDestinationEmail, null));
 			emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.email_subject));
 			emailIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.email_body, mEmailContents));
 			startActivity(Intent.createChooser(emailIntent, getString(R.string.email_prompt)));
 		} catch (ActivityNotFoundException e) {
 			// copy to clipboard instead if no email client found
-			String clipboardText = getString(R.string.email_backup_sender, mDestinationEmail == null ? "" :
+			String clipboardText = getString(R.string.email_backup_sender, TextUtils.isEmpty(mDestinationEmail) ? "" :
 					mDestinationEmail, getString(R.string.email_body, mEmailContents));
 
 			// see: http://stackoverflow.com/a/11012443

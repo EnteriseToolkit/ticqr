@@ -4,6 +4,8 @@
 	<style name="Theme.TicQR" parent="Theme.AppCompat.Light.DarkActionBar">
 		<item name="android:windowActionBarOverlay" tools:ignore="NewApi">true</item>
 		<item name="windowActionBarOverlay">true</item>
+		<item name="android:background">@null</item>
+		<item name="android:windowBackground">@null</item>
 
 		<!-- action bar background and widget tinting-->
 		<item name="colorPrimary">@color/primary</item>

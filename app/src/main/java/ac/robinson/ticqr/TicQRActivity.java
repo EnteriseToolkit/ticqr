@@ -75,7 +75,7 @@ public class TicQRActivity extends DecoderActivity {
 	private float mBoxSize;
 
 	private String mDestinationEmail;
-	private ArrayList<TickBoxHolder> mServerTickBoxes = new ArrayList<TickBoxHolder>();
+	private final ArrayList<TickBoxHolder> mServerTickBoxes = new ArrayList<TickBoxHolder>();
 	private ArrayList<PointF> mImageTickBoxes = new ArrayList<PointF>();
 
 	private boolean mBoxesLoaded = false;
@@ -98,7 +98,7 @@ public class TicQRActivity extends DecoderActivity {
 		public boolean ticked;
 		public boolean foundOnImage;
 
-		public PointF gridPosition;
+		public PointF imagePosition;
 
 		public TickBoxHolder(PointF location, String description, int quantity) {
 			this.location = location;
@@ -106,14 +106,20 @@ public class TicQRActivity extends DecoderActivity {
 			this.quantity = quantity;
 		}
 
-		public void setGridPosition(PointF position) {
-			gridPosition = position;
+		public void setImagePosition(PointF position) {
+			imagePosition = position;
 		}
 	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		if (!CameraUtilities.getIsCameraAvailable(getPackageManager())) {
+			Toast.makeText(TicQRActivity.this, getString(R.string.hint_no_camera), Toast.LENGTH_SHORT).show();
+			finish();
+			return;
+		}
 
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.main);
@@ -122,12 +128,6 @@ public class TicQRActivity extends DecoderActivity {
 		setResizeImageToView(true); // a lower-quality image
 
 		mImageView = (ImageView) findViewById(R.id.image_view);
-
-		if (!CameraUtilities.getIsCameraAvailable(getPackageManager())) {
-			Toast.makeText(TicQRActivity.this, getString(R.string.hint_no_camera), Toast.LENGTH_SHORT).show();
-			finish();
-			return;
-		}
 
 		// set up action bar
 		ActionBar actionBar = getSupportActionBar();
@@ -191,12 +191,19 @@ public class TicQRActivity extends DecoderActivity {
 	protected void onPageIdFound(String id) {
 		// Toast.makeText(TicQRActivity.this, "Page ID found", Toast.LENGTH_SHORT).show();
 
-		AsyncHttpClient client = new AsyncHttpClient();
 		RequestParams params = new RequestParams("lookup", id);
-		client.get(SERVER_URL, params, new JsonHttpResponseHandler() {
+		new AsyncHttpClient().get(SERVER_URL, params, new JsonHttpResponseHandler() {
+			private void handleFailure(int reason) {
+				// TODO: there are concurrency issues here with hiding the progress bar and showing the rescan button
+				// TODO: (e.g., this task and photo taking complete in different orders)
+				findViewById(R.id.parse_progress).setVisibility(View.GONE);
+				getSupportActionBar().setTitle(R.string.title_activity_image_only);
+				supportInvalidateOptionsMenu();
+				Toast.makeText(TicQRActivity.this, getString(reason), Toast.LENGTH_SHORT).show();
+			}
+
 			@Override
 			public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-				Log.d(TAG, response.toString());
 				try {
 					if ("ok".equals(response.getString("status"))) {
 						mDestinationEmail = response.isNull("destination") ? null : response.getString("destination");
@@ -220,16 +227,17 @@ public class TicQRActivity extends DecoderActivity {
 						if (mImageParsed) {
 							verifyBoxes();
 						}
+					} else {
+						handleFailure(R.string.hint_json_error);
 					}
 				} catch (JSONException e) {
-					Toast.makeText(TicQRActivity.this, getString(R.string.hint_json_error), Toast.LENGTH_SHORT).show();
+					handleFailure(R.string.hint_json_error);
 				}
 			}
 
 			@Override
 			public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-				Toast.makeText(TicQRActivity.this, getString(R.string.hint_connection_error),
-						Toast.LENGTH_SHORT).show();
+				handleFailure(R.string.hint_connection_error);
 			}
 		});
 	}
@@ -274,6 +282,7 @@ public class TicQRActivity extends DecoderActivity {
 	}
 
 	private void boxDetectionFailed() {
+		findViewById(R.id.parse_progress).setVisibility(View.GONE);
 		Toast.makeText(TicQRActivity.this, getString(R.string.hint_box_detection_failed), Toast.LENGTH_SHORT).show();
 	}
 
@@ -287,10 +296,6 @@ public class TicQRActivity extends DecoderActivity {
 	}
 
 	private void verifyBoxes() {
-		if (mServerTickBoxes == null) {
-			return; // TODO
-		}
-
 		// scans the list comparing with the actual tick box positions (some could be outside the image)
 		int maximumBoxDistance = Math.round(mBoxSize * 0.75f);
 		int maximumQRCodeDistance = Math.round(mBoxSize * 0.4f);
@@ -301,7 +306,7 @@ public class TicQRActivity extends DecoderActivity {
 
 		// update the server boxes with their position on the image
 		for (TickBoxHolder tickBox : mServerTickBoxes) {
-			tickBox.setGridPosition(QRImageParser.getGridPosition(mImageParameters, tickBox.location));
+			tickBox.setImagePosition(QRImageParser.getImagePosition(mImageParameters, tickBox.location));
 		}
 
 		// first pass - match ticked boxes on the image with ticked boxes from the server
@@ -335,7 +340,7 @@ public class TicQRActivity extends DecoderActivity {
 					continue;
 				}
 
-				PointF pos = tickBox.gridPosition;
+				PointF pos = tickBox.imagePosition;
 				float boxDistance = (float) Math.sqrt(Math.pow(p.x - pos.x, 2) + Math.pow(p.y - pos.y, 2));
 				if (boxDistance < maximumBoxDistance && boxDistance < minDistance) {
 					assignedBox = tickBox;
@@ -364,22 +369,22 @@ public class TicQRActivity extends DecoderActivity {
 		StringBuilder itemsBuilder = new StringBuilder();
 		for (TickBoxHolder tickBox : mServerTickBoxes) {
 			if (tickBox.ticked) {
-				PointF gridPosition = tickBox.gridPosition;
+				PointF imagePosition = tickBox.imagePosition;
 				try {
-					if (mBitmap.getPixel((int) gridPosition.x, (int) gridPosition.y) == Color.TRANSPARENT) {
+					if (mBitmap.getPixel((int) imagePosition.x, (int) imagePosition.y) == Color.TRANSPARENT) {
 						tickBox.ticked = false;
 						Log.d(TAG, "Un-ticking box outside the image (" + tickBox.description + " " +
-								"at " + gridPosition.x + "," + gridPosition.y + ")");
+								"at " + imagePosition.x + "," + imagePosition.y + ")");
 					}
 				} catch (IllegalArgumentException e) {
 					tickBox.ticked = false;
 					Log.d(TAG, "Un-ticking box with invalid image coordinate (" + tickBox.description + ") at " +
-							gridPosition.x + "," + gridPosition.y);
+							imagePosition.x + "," + imagePosition.y);
 				}
 
 				if (tickBox.ticked) {
-					Log.d(TAG, "Ticked box (" + tickBox.description + ") found at " + gridPosition.x + "," +
-							"" + gridPosition.y);
+					Log.d(TAG, "Ticked box (" + tickBox.description + ") found at " + imagePosition.x + "," +
+							+ imagePosition.y);
 
 					tickedBoxes = true;
 					itemsBuilder.append(getString(R.string.email_item, tickBox.quantity, tickBox.description));
@@ -388,8 +393,8 @@ public class TicQRActivity extends DecoderActivity {
 					tickHighlight.setImageResource(tickIcon);
 					RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams
 							.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-					layoutParams.leftMargin = mImageView.getLeft() + Math.round(gridPosition.x) - (iconWidth / 2);
-					layoutParams.topMargin = mImageView.getTop() + Math.round(gridPosition.y) - (iconHeight / 2);
+					layoutParams.leftMargin = mImageView.getLeft() + Math.round(imagePosition.x) - (iconWidth / 2);
+					layoutParams.topMargin = mImageView.getTop() + Math.round(imagePosition.y) - (iconHeight / 2);
 
 					highlightHolder.addView(tickHighlight, layoutParams);
 					tickHighlight.startAnimation(pulse);

@@ -2,6 +2,7 @@
 <resources>
 	<string name="app_name">TicQR</string>
 	<string name="title_activity_capture">Frame two QR codes</string>
+	<string name="title_activity_image_only">No tick boxes available</string>
 	<string name="title_activity_order">Place your order</string>
 
 	<string name="photo_description">The object that was found in your photo</string>

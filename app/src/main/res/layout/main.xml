@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/background">
+	android:background="@color/background"
+	tools:ignore="Overdraw">
 
 	<SurfaceView
 		android:id="@+id/preview_view"
@@ -14,8 +16,7 @@
 	<ac.robinson.dualqrscanner.ViewfinderView
 		android:id="@+id/viewfinder_view"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:background="@android:color/transparent"/>
+		android:layout_height="match_parent"/>
 
 	<ImageView
 		android:id="@+id/image_view"
@@ -23,7 +24,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:layout_marginTop="?attr/actionBarSize"
-		android:visibility="visible"/>
+		android:visibility="invisible"/>
 	<!-- must be invisible (rather than gone) as we need its dimensions -->
 
 	<ProgressBar

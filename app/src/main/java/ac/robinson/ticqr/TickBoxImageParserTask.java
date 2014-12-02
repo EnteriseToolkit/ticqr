@@ -61,7 +61,7 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 
 		// we look for *un-ticked* boxes, rather than ticked, as they are uniform in appearance (and hence easier to
 		// detect) - they show up as a box within a box
-		ArrayList<PointF> centrePoints = new ArrayList<PointF>();
+		ArrayList<PointF> centrePoints = new ArrayList<>();
 		int minimumOuterBoxArea = (int) Math.round(Math.pow(mBoxSize, 2));
 		int maximumOuterBoxArea = (int) Math.round(Math.pow(mBoxSize * 1.35f, 2));
 		int minimumInnerBoxArea = (int) Math.round(Math.pow(mBoxSize * 0.5f, 2));
@@ -99,7 +99,7 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 
 		// get the contours in the image, and their hierarchy
 		Mat hierarchyMat = new Mat();
-		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		List<MatOfPoint> contours = new ArrayList<>();
 		Imgproc.findContours(bitMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 		if (DEBUG) {
 			Imgproc.drawContours(bitMat, contours, -1, new Scalar(30, 255, 255), 1);
@@ -107,7 +107,7 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 
 		// parse the contours and look for a box containing another box, with similar enough sizes
 		int numContours = contours.size();
-		ArrayList<Integer> searchedContours = new ArrayList<Integer>();
+		ArrayList<Integer> searchedContours = new ArrayList<>();
 		Log.d(TAG, "Found " + numContours + " possible tick box areas");
 		if (numContours > 0 && !hierarchyMat.empty()) {
 			for (int i = 0; i < numContours; i++) {
@@ -312,7 +312,7 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 	}
 
 	private void drawPoints(Mat bitMat, MatOfPoint boxPoints, Scalar colour, int width) {
-		List<MatOfPoint> simplifiedOuterBox = new ArrayList<MatOfPoint>();
+		List<MatOfPoint> simplifiedOuterBox = new ArrayList<>();
 		simplifiedOuterBox.add(boxPoints);
 		Imgproc.drawContours(bitMat, simplifiedOuterBox, -1, colour, width);
 	}

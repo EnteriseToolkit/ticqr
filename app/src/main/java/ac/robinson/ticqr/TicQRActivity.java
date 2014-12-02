@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -32,10 +33,12 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -75,8 +78,8 @@ public class TicQRActivity extends DecoderActivity {
 	private float mBoxSize;
 
 	private String mDestinationEmail;
-	private final ArrayList<TickBoxHolder> mServerTickBoxes = new ArrayList<TickBoxHolder>();
-	private ArrayList<PointF> mImageTickBoxes = new ArrayList<PointF>();
+	private final ArrayList<TickBoxHolder> mServerTickBoxes = new ArrayList<>();
+	private ArrayList<PointF> mImageTickBoxes = new ArrayList<>();
 
 	private boolean mBoxesLoaded = false;
 	private boolean mImageParsed = false;
@@ -128,6 +131,7 @@ public class TicQRActivity extends DecoderActivity {
 		setResizeImageToView(true); // a lower-quality image
 
 		mImageView = (ImageView) findViewById(R.id.image_view);
+		mImageView.setOnTouchListener(mImageTouchListener);
 
 		// set up action bar
 		ActionBar actionBar = getSupportActionBar();
@@ -358,15 +362,7 @@ public class TicQRActivity extends DecoderActivity {
 
 		// second pass - un-tick any boxes that are still marked as ticked, but are actually outside the image,
 		// then add an animated tick box on those that remain
-		RelativeLayout highlightHolder = (RelativeLayout) findViewById(R.id.tick_highlight_holder);
-		Animation pulse = AnimationUtils.loadAnimation(this, R.anim.pulse);
-		int tickIcon = R.drawable.ic_highlight_tick;
-		Drawable tickDrawable = getResources().getDrawable(tickIcon);
-		int iconWidth = tickDrawable.getIntrinsicWidth();
-		int iconHeight = tickDrawable.getIntrinsicHeight();
-
 		boolean tickedBoxes = false;
-		StringBuilder itemsBuilder = new StringBuilder();
 		for (TickBoxHolder tickBox : mServerTickBoxes) {
 			if (tickBox.ticked) {
 				PointF imagePosition = tickBox.imagePosition;
@@ -384,20 +380,11 @@ public class TicQRActivity extends DecoderActivity {
 
 				if (tickBox.ticked) {
 					Log.d(TAG, "Ticked box (" + tickBox.description + ") found at " + imagePosition.x + "," +
-							+ imagePosition.y);
+							+imagePosition.y);
 
+					// add a tick overlay on each ticked box, and allow clicking to tick/un-tick any box
+					addTickHighlight(tickBox);
 					tickedBoxes = true;
-					itemsBuilder.append(getString(R.string.email_item, tickBox.quantity, tickBox.description));
-
-					ImageView tickHighlight = new ImageView(TicQRActivity.this);
-					tickHighlight.setImageResource(tickIcon);
-					RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams
-							.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-					layoutParams.leftMargin = mImageView.getLeft() + Math.round(imagePosition.x) - (iconWidth / 2);
-					layoutParams.topMargin = mImageView.getTop() + Math.round(imagePosition.y) - (iconHeight / 2);
-
-					highlightHolder.addView(tickHighlight, layoutParams);
-					tickHighlight.startAnimation(pulse);
 				}
 			}
 		}
@@ -405,14 +392,110 @@ public class TicQRActivity extends DecoderActivity {
 		findViewById(R.id.parse_progress).setVisibility(View.GONE);
 
 		getSupportActionBar().setTitle(R.string.title_activity_order);
-		supportInvalidateOptionsMenu(); // to show the place order button & rescan option
-		if (tickedBoxes) {
-			mEmailContents = itemsBuilder.toString();
-			Toast.makeText(TicQRActivity.this, getString(R.string.hint_send_order), Toast.LENGTH_SHORT).show();
-		} else {
-			Toast.makeText(TicQRActivity.this, getString(R.string.hint_no_boxes_found), Toast.LENGTH_SHORT).show();
-		}
+		mEmailContents = getEmailMessage();
+		supportInvalidateOptionsMenu(); // to show the place order button (if required) & rescan option
+		Toast.makeText(TicQRActivity.this, tickedBoxes ? R.string.hint_send_order : R.string.hint_no_boxes_found,
+				Toast.LENGTH_SHORT).show();
 	}
+
+	private String getEmailMessage() {
+		StringBuilder itemsBuilder = new StringBuilder();
+		for (TickBoxHolder tickBox : mServerTickBoxes) {
+			if (tickBox.ticked) {
+				itemsBuilder.append(getString(R.string.email_item, tickBox.quantity, tickBox.description));
+			}
+		}
+		if (itemsBuilder.length() > 0) {
+			return itemsBuilder.toString();
+		}
+		return null;
+	}
+
+	private void addTickHighlight(TickBoxHolder tickBox) {
+		int tickIcon = R.drawable.ic_highlight_tick;
+		Drawable tickDrawable = getResources().getDrawable(tickIcon);
+
+		ImageView tickHighlight = new ImageView(TicQRActivity.this);
+		tickHighlight.setImageResource(tickIcon);
+		RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams
+				.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+		layoutParams.leftMargin = mImageView.getLeft() + Math.round(tickBox.imagePosition.x) - (tickDrawable
+				.getIntrinsicWidth() / 2);
+		layoutParams.topMargin = mImageView.getTop() + Math.round(tickBox.imagePosition.y) - (tickDrawable
+				.getIntrinsicHeight() / 2);
+
+		((RelativeLayout) findViewById(R.id.tick_highlight_holder)).addView(tickHighlight, layoutParams);
+		tickHighlight.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse));
+
+		tickHighlight.setOnClickListener(mTickClickListener);
+		tickHighlight.setTag(tickBox);
+	}
+
+	private final View.OnClickListener mTickClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View view) {
+			TickBoxHolder holder = (TickBoxHolder) view.getTag();
+			if (holder.ticked) {
+				holder.ticked = false;
+				((RelativeLayout) view.getParent()).removeView(view);
+				mEmailContents = getEmailMessage();
+				supportInvalidateOptionsMenu(); // to hide the place order button if necessary
+			}
+		}
+	};
+
+	private final View.OnTouchListener mImageTouchListener = new View.OnTouchListener() {
+		private float mDownX;
+		private float mDownY;
+		private boolean mCanClick;
+		private float mScaledTouchSlop = -1;
+
+		@Override
+		public boolean onTouch(View view, MotionEvent event) {
+			switch (event.getAction()) {
+				case MotionEvent.ACTION_DOWN:
+					if (mScaledTouchSlop < 0) {
+						mScaledTouchSlop = ViewConfiguration.get(TicQRActivity.this).getScaledTouchSlop();
+					}
+					mDownX = event.getX();
+					mDownY = event.getY();
+					mCanClick = true;
+					break;
+
+				case MotionEvent.ACTION_MOVE:
+					final float scrollX = mDownX - event.getX();
+					final float scrollY = mDownY - event.getY();
+					final float dist = (float) Math.sqrt(scrollX * scrollX + scrollY * scrollY);
+					if (dist >= mScaledTouchSlop) {
+						mCanClick = false;
+					}
+					break;
+
+				case MotionEvent.ACTION_UP:
+					if (mCanClick) {
+						view.playSoundEffect(SoundEffectConstants.CLICK); // so we get the click sound
+						float imageX = event.getX();
+						float imageY = event.getY();
+						float boxSize = mBoxSize; // mBoxSize is total width, but allow to give a larger click area
+						RectF comparisonRect = new RectF();
+						for (TickBoxHolder tickBox : mServerTickBoxes) {
+							PointF position = tickBox.imagePosition;
+							comparisonRect.set(position.x - boxSize, position.y - boxSize, position.x + boxSize,
+									position.y + boxSize);
+							if (!tickBox.ticked && comparisonRect.contains(imageX, imageY)) {
+								tickBox.ticked = true;
+								addTickHighlight(tickBox);
+								mEmailContents = getEmailMessage();
+								supportInvalidateOptionsMenu(); // to show the place order button
+								break;
+							}
+						}
+					}
+					break;
+			}
+			return true;
+		}
+	};
 
 	private void sendOrder() {
 		try {

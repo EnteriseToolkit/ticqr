@@ -3,6 +3,8 @@ TicQR
 
 An Android app for scanning tick-to-order forms. Use the [CodeMaker](https://github.com/EnteriseToolkit/codemaker) to generate a tickable form, then take a photo of it with TicQR to automatically send an email to the associated address.
 
+Also [available on Google Play](https://play.google.com/store/apps/details?id=ac.robinson.ticqr).
+
 ![TicQR](http://www.enterise.info/ticqr/github.jpg)
 
 

@@ -20,10 +20,10 @@
 
 	<ImageView
 		android:id="@+id/image_view"
-		android:contentDescription="@string/photo_description"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:layout_marginTop="?attr/actionBarSize"
+		android:contentDescription="@string/photo_description"
 		android:visibility="invisible"/>
 	<!-- must be invisible (rather than gone) as we need its dimensions -->
 

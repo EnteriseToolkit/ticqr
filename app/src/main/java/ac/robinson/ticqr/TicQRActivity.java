@@ -135,8 +135,10 @@ public class TicQRActivity extends DecoderActivity {
 
 		// set up action bar
 		ActionBar actionBar = getSupportActionBar();
-		actionBar.setTitle(R.string.title_activity_capture);
-		actionBar.setDisplayShowTitleEnabled(true);
+		if (actionBar != null) {
+			actionBar.setTitle(R.string.title_activity_capture);
+			actionBar.setDisplayShowTitleEnabled(true);
+		}
 
 		int resultPointColour = getResources().getColor(R.color.accent);
 		((ViewfinderView) findViewById(R.id.viewfinder_view)).setResultPointColour(resultPointColour);
@@ -177,7 +179,10 @@ public class TicQRActivity extends DecoderActivity {
 				RelativeLayout highlightHolder = (RelativeLayout) findViewById(R.id.tick_highlight_holder);
 				highlightHolder.removeAllViews();
 
-				getSupportActionBar().setTitle(R.string.title_activity_capture);
+				ActionBar actionBar = getSupportActionBar();
+				if (actionBar != null) {
+					actionBar.setTitle(R.string.title_activity_capture);
+				}
 				supportInvalidateOptionsMenu();
 				requestScanResume();
 				return true;
@@ -195,13 +200,27 @@ public class TicQRActivity extends DecoderActivity {
 	protected void onPageIdFound(String id) {
 		// Toast.makeText(TicQRActivity.this, "Page ID found", Toast.LENGTH_SHORT).show();
 
+		// handle the demo tick sheet manually (e.g., don't require an internet connection)
+		if ("hfQP".equals(id)) {
+			try {
+				Log.d(TAG, "Loading cached JSON response");
+				parseJsonObject(new JSONObject(getString(R.string.cached_demo_form)));
+			} catch (JSONException e) {
+				Log.d(TAG, "Unable to load cached JSON response");
+			}
+			return;
+		}
+
 		RequestParams params = new RequestParams("lookup", id);
 		new AsyncHttpClient().get(SERVER_URL, params, new JsonHttpResponseHandler() {
 			private void handleFailure(int reason) {
 				// TODO: there are concurrency issues here with hiding the progress bar and showing the rescan button
 				// TODO: (e.g., this task and photo taking complete in different orders)
 				findViewById(R.id.parse_progress).setVisibility(View.GONE);
-				getSupportActionBar().setTitle(R.string.title_activity_image_only);
+				ActionBar actionBar = getSupportActionBar();
+				if (actionBar != null) {
+					actionBar.setTitle(R.string.title_activity_image_only);
+				}
 				supportInvalidateOptionsMenu();
 				Toast.makeText(TicQRActivity.this, getString(reason), Toast.LENGTH_SHORT).show();
 			}
@@ -210,27 +229,7 @@ public class TicQRActivity extends DecoderActivity {
 			public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
 				try {
 					if ("ok".equals(response.getString("status"))) {
-						mDestinationEmail = response.isNull("destination") ? null : response.getString("destination");
-
-						JSONArray boxes = response.getJSONArray("tickBoxes");
-						if (boxes != null && !boxes.isNull(0)) {
-							for (int i = 0; i < boxes.length(); i++) {
-								JSONObject jsonBox = boxes.getJSONObject(i);
-
-								TickBoxHolder box = new TickBoxHolder(new PointF(jsonBox.getInt("x"),
-										jsonBox.getInt("y")), jsonBox.getString("description"),
-										jsonBox.getInt("quantity"));
-
-								box.ticked = true; // first we assume all boxes are ticked
-								box.foundOnImage = false; // (but not yet found on the image)
-								mServerTickBoxes.add(box);
-							}
-						}
-
-						mBoxesLoaded = true;
-						if (mImageParsed) {
-							verifyBoxes();
-						}
+						parseJsonObject(response);
 					} else {
 						handleFailure(R.string.hint_json_error);
 					}
@@ -246,6 +245,38 @@ public class TicQRActivity extends DecoderActivity {
 		});
 	}
 
+	private void parseJsonObject(JSONObject response) {
+		if (response != null) {
+			try {
+				mDestinationEmail = response.isNull("destination") ? null : response.getString("destination");
+
+				JSONArray boxes = response.getJSONArray("tickBoxes");
+				if (boxes != null && !boxes.isNull(0)) {
+					for (int i = 0; i < boxes.length(); i++) {
+						JSONObject jsonBox = boxes.getJSONObject(i);
+
+						TickBoxHolder box = new TickBoxHolder(new PointF(jsonBox.getInt("x"), jsonBox.getInt("y")),
+								jsonBox.getString("description"), jsonBox.getInt("quantity"));
+
+
+						box.ticked = true; // first we assume all boxes are ticked
+						box.foundOnImage = false; // (but not yet found on the image)
+						mServerTickBoxes.add(box);
+					}
+				}
+
+				mBoxesLoaded = true;
+				if (mImageParsed) {
+					verifyBoxes();
+				}
+			} catch (JSONException e) {
+				Log.d(TAG, "Unable to parse JSON response");
+			}
+		} else {
+			Log.d(TAG, "Unable to parse JSON response");
+		}
+	}
+
 	@Override
 	protected void onPictureError() {
 		// note: an automatic rescan is started whenever this occurs, so this is mainly designed for, e.g.,
@@ -254,8 +285,8 @@ public class TicQRActivity extends DecoderActivity {
 	}
 
 	@Override
-	protected void onPictureCompleted(Bitmap parsedBitmap, ImageParameters imageParameters,
-	                                  CodeParameters codeParameters) {
+	protected void onPictureCompleted(Bitmap parsedBitmap, ImageParameters imageParameters, CodeParameters
+			codeParameters) {
 		// Toast.makeText(TicQRActivity.this, "Picture completed", Toast.LENGTH_SHORT).show();
 
 		mImageView.setImageBitmap(parsedBitmap);
@@ -268,8 +299,8 @@ public class TicQRActivity extends DecoderActivity {
 		// TODO: dependent on the smallest QR code size (e.g., those with more control points will make this fail)
 		mBoxSize = (mCodeParameters.mPointSpacing / 15) * 7;
 
-		TickBoxImageParserTask parserTask = new TickBoxImageParserTask(parsedBitmap, mBoxSize,
-				new TickBoxImageParserTask.TickBoxImageParserCallback() {
+		TickBoxImageParserTask parserTask = new TickBoxImageParserTask(parsedBitmap, mBoxSize, new
+				TickBoxImageParserTask.TickBoxImageParserCallback() {
 			@Override
 			public void boxDetectionFailed() {
 				TicQRActivity.this.boxDetectionFailed();
@@ -391,7 +422,10 @@ public class TicQRActivity extends DecoderActivity {
 
 		findViewById(R.id.parse_progress).setVisibility(View.GONE);
 
-		getSupportActionBar().setTitle(R.string.title_activity_order);
+		ActionBar actionBar = getSupportActionBar();
+		if (actionBar != null) {
+			actionBar.setTitle(R.string.title_activity_order);
+		}
 		mEmailContents = getEmailMessage();
 		supportInvalidateOptionsMenu(); // to show the place order button (if required) & rescan option
 		Toast.makeText(TicQRActivity.this, tickedBoxes ? R.string.hint_send_order : R.string.hint_no_boxes_found,
@@ -419,10 +453,10 @@ public class TicQRActivity extends DecoderActivity {
 		tickHighlight.setImageResource(tickIcon);
 		RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams
 				.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-		layoutParams.leftMargin = mImageView.getLeft() + Math.round(tickBox.imagePosition.x) - (tickDrawable
-				.getIntrinsicWidth() / 2);
-		layoutParams.topMargin = mImageView.getTop() + Math.round(tickBox.imagePosition.y) - (tickDrawable
-				.getIntrinsicHeight() / 2);
+		layoutParams.leftMargin = mImageView.getLeft() + Math.round(tickBox.imagePosition.x) - (tickDrawable != null ?
+				(tickDrawable.getIntrinsicWidth() / 2) : 0);
+		layoutParams.topMargin = mImageView.getTop() + Math.round(tickBox.imagePosition.y) - (tickDrawable != null ?
+				(tickDrawable.getIntrinsicHeight() / 2) : 0);
 
 		((RelativeLayout) findViewById(R.id.tick_highlight_holder)).addView(tickHighlight, layoutParams);
 		tickHighlight.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse));
@@ -499,8 +533,8 @@ public class TicQRActivity extends DecoderActivity {
 
 	private void sendOrder() {
 		try {
-			Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto",
-					TextUtils.isEmpty(mDestinationEmail) ? "" : mDestinationEmail, null));
+			Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", TextUtils.isEmpty
+					(mDestinationEmail) ? "" : mDestinationEmail, null));
 			emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.email_subject));
 			emailIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.email_body, mEmailContents));
 			startActivity(Intent.createChooser(emailIntent, getString(R.string.email_prompt)));

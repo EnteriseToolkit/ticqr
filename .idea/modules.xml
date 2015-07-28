@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../...iml" filepath="$PROJECT_DIR$/../...iml" />
+      <module fileurl="file://$USER_HOME$/Documents.iml" filepath="$USER_HOME$/Documents.iml" />
+      <module fileurl="file://$USER_HOME$/Documents.iml" filepath="$USER_HOME$/Documents.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../dualqrscanner/dualqrscanner.iml" filepath="$PROJECT_DIR$/../dualqrscanner/dualqrscanner.iml" />
       <module fileurl="file://$PROJECT_DIR$/../dualqrscanner/app/dualqrscanner-app.iml" filepath="$PROJECT_DIR$/../dualqrscanner/app/dualqrscanner-app.iml" />
       <module fileurl="file://$PROJECT_DIR$/ticqr.iml" filepath="$PROJECT_DIR$/ticqr.iml" />
     </modules>
   </component>
 </project>
-

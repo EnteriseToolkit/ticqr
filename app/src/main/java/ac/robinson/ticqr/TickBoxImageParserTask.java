@@ -44,9 +44,9 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 	private final TickBoxImageParserCallback mCallback;
 
 	public interface TickBoxImageParserCallback {
-		public void boxDetectionFailed();
+		void boxDetectionFailed();
 
-		public void boxDetectionSucceeded(ArrayList<PointF> result);
+		void boxDetectionSucceeded(ArrayList<PointF> result);
 	}
 
 	public TickBoxImageParserTask(Bitmap bitmap, float boxSize, TickBoxImageParserCallback callback) {

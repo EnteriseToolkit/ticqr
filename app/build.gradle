@@ -1,16 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '22.0.1'
+    compileSdkVersion 24
+    buildToolsVersion '24'
 
     defaultConfig {
         applicationId 'ac.robinson.ticqr'
         minSdkVersion 8
-        targetSdkVersion 22
-        versionCode 3
+        targetSdkVersion 24
+        versionCode 4
         versionName '1.0'
-        resConfigs "en"
+        resConfigs 'en'
     }
 
     compileOptions {
@@ -20,19 +20,21 @@ android {
 
     buildTypes {
         release {
-            shrinkResources true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+
+            shrinkResources true
         }
     }
 }
 
 dependencies {
+    compile project(':dualqrscanner')
+
+    compile files('libs/opencv-3.1.0.jar')
+    compile files('libs/opencv_armeabi.jar')
     compile files('libs/opencv_armeabi-v7a.jar')
-    compile files('libs/opencv_2.4.8.jar')
 
-    compile project(':..:dualqrscanner:app')
-
-    compile 'com.android.support:appcompat-v7:22.2.1'
-    compile 'com.loopj.android:android-async-http:1.4.6'
+    compile 'com.android.support:appcompat-v7:24.0.0'
+    compile 'com.loopj.android:android-async-http:1.4.9'
 }

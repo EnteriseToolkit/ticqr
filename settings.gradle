@@ -1,2 +1,3 @@
 include ':app'
-include '..:dualqrscanner:app'
+include ':dualqrscanner'
+project(':dualqrscanner').projectDir = new File('../dualqrscanner/app')

@@ -22,7 +22,6 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -297,7 +296,7 @@ class TickBoxImageParserTask extends AsyncTask<Void, Bitmap, ArrayList<PointF>> 
 					// draw the inner box if debugging
 					if (DEBUG) {
 						drawPoints(bitMat, new MatOfPoint(boxPointsArray), new Scalar(255, 255, 255), 1);
-						Core.circle(bitMat, new org.opencv.core.Point(centreX, centreY), 3, new Scalar(255, 255, 255));
+						Imgproc.circle(bitMat, new org.opencv.core.Point(centreX, centreY), 3, new Scalar(255, 255, 255));
 					}
 
 					// add to the list of boxes to check

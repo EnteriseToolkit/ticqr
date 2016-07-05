@@ -48,7 +48,6 @@ import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
-import org.apache.http.Header;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -62,6 +61,7 @@ import ac.robinson.dualqrscanner.ImageParameters;
 import ac.robinson.dualqrscanner.QRImageParser;
 import ac.robinson.dualqrscanner.ViewfinderView;
 import ac.robinson.dualqrscanner.camera.CameraUtilities;
+import cz.msebera.android.httpclient.Header;
 
 public class TicQRActivity extends DecoderActivity {
 
